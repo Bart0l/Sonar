@@ -1,0 +1,170 @@
+//Borzyszkowski_Bart³omiej
+//Code::Blocks IDE 16.01
+//=== TDM-GCC Compiler Suite for Windows ===
+//---           GCC 4.9 Series           ---
+//***   Standard MinGW 32-bit Edition    ***
+
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <string.h>
+
+using namespace std;
+
+struct info{
+    int biSize;
+    int biWidth;
+    int biHeight;
+    char biPlanes[2];
+    char biBitCount[2];
+    char biCompression[4];
+    char biSizeImage[4];
+    char biXPelsPerMeter[4];
+    char biYPelsPerMeter[4];
+    char biClrUsed[4];
+    char biClrImportant[1];
+};
+
+struct file{
+    char bfType[2];
+    int bfSize;
+    char bfReserved1[2];
+    char bfReserved2[2];
+    int bfOffBits;
+};
+
+void czytaj_n(ifstream &in, file &f, info &i)
+{
+    in.read(f.bfType,2);
+    in.read((char*)&f.bfSize, sizeof(int));
+    in.read(f.bfReserved1,2);
+    in.read(f.bfReserved2,2);
+    in.read((char*)&f.bfOffBits, sizeof(int));
+
+    in.read((char*)&i.biSize, sizeof(int));
+    in.read((char*)&i.biWidth, sizeof(int));
+    in.read((char*)&i.biHeight, sizeof(int));
+    in.read(i.biPlanes,2);
+    in.read(i.biBitCount,2);
+    in.read(i.biCompression,4);
+    in.read(i.biSizeImage,4);
+    in.read(i.biXPelsPerMeter,4);
+    in.read(i.biYPelsPerMeter,4);
+    in.read(i.biClrUsed,4);
+    in.read(i.biClrImportant,4);
+}
+
+void wklej_n(ofstream &wyjsciowy, file f, info i)
+{
+    wyjsciowy.write(f.bfType,2);
+    wyjsciowy.write((char*)&f.bfSize, 4);
+    wyjsciowy.write(f.bfReserved1,2);
+    wyjsciowy.write(f.bfReserved2,2);
+    wyjsciowy.write((char*)&f.bfOffBits, 4);
+
+    wyjsciowy.write((char*)&i.biSize, 4);
+    wyjsciowy.write((char*)&i.biWidth, 4);
+    wyjsciowy.write((char*)&i.biHeight, 4);
+    wyjsciowy.write(i.biPlanes,2);
+    wyjsciowy.write(i.biBitCount,2);
+    wyjsciowy.write(i.biCompression,4);
+    wyjsciowy.write(i.biSizeImage,4);
+    wyjsciowy.write(i.biXPelsPerMeter,4);
+    wyjsciowy.write(i.biYPelsPerMeter,4);
+    wyjsciowy.write(i.biClrUsed,4);
+    wyjsciowy.write(i.biClrImportant,4);
+}
+
+void przerysuj(ifstream &plik, ofstream &wyjsciowy, file pf, info pi)
+{
+    int subpiksel;
+    int h=pi.biHeight;
+    int w=(pf.bfSize-pf.bfOffBits)/pi.biHeight;
+    for(int i=0; i<h; i++)
+    {
+        for(int j=0; j<w; j++)
+        {
+            plik.read((char*)&subpiksel, 1);
+            wyjsciowy.write((char*)&subpiksel, 1);
+        }
+    }
+}
+
+bool czy_biale(int &b, int &g, int &r)
+{
+    double biale;
+    biale=(b+g+r)/3;
+    if(biale>=245)
+        return false;
+    else
+        return true;
+}
+
+void kopiuj_logo(ifstream &logo, ofstream &wyjsciowy, file lf, info li, file pf, info pi)
+{
+    int wiersz=(pf.bfSize-pf.bfOffBits)/pi.biHeight;
+    int b=0,g=0,r=0;
+    int lzero=(lf.bfSize-lf.bfOffBits)/li.biHeight - 3*li.biWidth;
+    for(int u=0; u<li.biHeight; u++)
+    {
+        wyjsciowy.seekp(pf.bfOffBits + (pi.biHeight-li.biHeight-15)*wiersz + u*wiersz + (wiersz-li.biWidth*3-20*3));
+        for(int k=0; k<li.biWidth; k++)
+        {
+            logo.read((char*)&b, 1);
+            logo.read((char*)&g, 1);
+            logo.read((char*)&r, 1);
+
+            if(czy_biale(b,g,r))
+            {
+                wyjsciowy.write((char*)&b, 1);
+                wyjsciowy.write((char*)&g, 1);
+                wyjsciowy.write((char*)&r, 1);
+            }
+            else
+            {
+                wyjsciowy.seekp(wyjsciowy.tellp()+3);
+            }
+        }
+        logo.seekg(logo.tellg()+lzero);
+    }
+    cout<<endl<<"Logo zostalo pozbawione bialego tla i dodane do obrazu."<<endl;
+}
+
+int main()
+{
+    cout <<endl<< "Bartlomiej Borzyszkowski" << endl <<"Podstawy Programowania: Projekt 2." << endl << endl;
+    cout << "Witaj Uzytkowniku!" << endl <<"Korzystasz z programu, ktory do obrazu dodaje kolorowe logo Katedry Systemow Elektroniki Morskiej."<<endl;
+
+    ifstream logo("ksem_logo2.bmp", ios::binary);
+    if(!logo){
+    cout <<endl<<"Nie mozna otworzyc logo. Sprawdz lokalizacje i podaj odpowiednia sciezke dostepu."<<endl;
+    exit(0);}
+
+    ofstream wyjsciowy("UTWORZONY_PLIK.bmp", ios::binary);
+    if(!wyjsciowy){
+    cout <<endl<<"Nie mozna utworzyc pliku. Sprawdz lokalizacje i podaj odpowiednia sciezke dostepu."<<endl;
+    exit(0);}
+
+    ifstream plik("sonar_aktywny_plakat.bmp", ios::binary);
+    if(!plik){
+    cout <<"Nie mozna otworzyc obrazu sonar. Sprawdz lokalizacje i podaj odpowiednia sciezke dostepu."<<endl;
+    exit(0);}
+
+    file pf,lf;
+    info pi,li;
+
+    czytaj_n(plik,pf,pi);
+    czytaj_n(logo,lf,li);
+    wklej_n(wyjsciowy,pf,pi);
+    przerysuj(plik, wyjsciowy, pf, pi);
+    kopiuj_logo(logo, wyjsciowy, lf, li, pf, pi);
+
+    plik.close();
+    logo.close();
+    wyjsciowy.close();
+
+    cout<<endl<<"Nowy plik BMP zostal utworzony w folderze docelowym pod nazwa 'UTWORZONY_PLIK'."<<endl;
+    cout<<endl<<"Dziekuje za skorzystanie z programu! ~Bartek Borzyszkowski"<<endl;
+
+    return 0;
+}
