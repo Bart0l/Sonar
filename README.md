@@ -1,5 +1,5 @@
 # Sonar
-Projekt napisano w okresie: 2016_01
+Projekt napisano w okresie: 2017_01
 
 Programowanie z wykorzystaniem strumieni do operacji na plikach BMP
 
